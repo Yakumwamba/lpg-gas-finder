@@ -7,7 +7,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Backend API Base URL - Update this with your actual backend URL
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+// Note: Backend routes don't use /api/v1 prefix
+const API_BASE_URL = 'http://localhost:8080';
 
 const TOKEN_KEY = '@lpg_gas_finder_token';
 
@@ -144,7 +145,7 @@ export const authAPI = {
   async signout() {
     try {
       await apiClient.request('/auth/signout', {
-        method: 'POST',
+        method: 'GET',
       });
     } catch (error) {
       console.error('Sign out error:', error);
@@ -157,7 +158,7 @@ export const authAPI = {
    */
   async sendPhoneCode(phoneNumber) {
     try {
-      const response = await apiClient.request('/auth/phone/send', {
+      const response = await apiClient.request('/auth/send-code', {
         method: 'POST',
         body: JSON.stringify({
           phone_number: phoneNumber,
@@ -175,7 +176,7 @@ export const authAPI = {
    */
   async verifyPhone(phoneNumber, code) {
     try {
-      const response = await apiClient.request('/auth/phone/verify', {
+      const response = await apiClient.request('/auth/verify-phone', {
         method: 'POST',
         body: JSON.stringify({
           phone_number: phoneNumber,
@@ -199,7 +200,7 @@ export const userAPI = {
    */
   async getProfile() {
     try {
-      const response = await apiClient.request('/users/profile', {
+      const response = await apiClient.request('/user/profile', {
         method: 'GET',
       });
 
@@ -214,7 +215,7 @@ export const userAPI = {
    */
   async updateProfile(profileData) {
     try {
-      const response = await apiClient.request('/users/profile', {
+      const response = await apiClient.request('/user/profile', {
         method: 'PUT',
         body: JSON.stringify(profileData),
       });
@@ -230,7 +231,7 @@ export const userAPI = {
    */
   async updateLocation(latitude, longitude) {
     try {
-      const response = await apiClient.request('/users/location', {
+      const response = await apiClient.request('/user/location', {
         method: 'PUT',
         body: JSON.stringify({
           latitude,
@@ -241,6 +242,53 @@ export const userAPI = {
       return response;
     } catch (error) {
       throw new Error(error.message || 'Failed to update location');
+    }
+  },
+
+  /**
+   * Create new order
+   */
+  async createOrder(orderData) {
+    try {
+      const response = await apiClient.request('/user/orders/create', {
+        method: 'POST',
+        body: JSON.stringify(orderData),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to create order');
+    }
+  },
+
+  /**
+   * Get user orders
+   */
+  async getOrders() {
+    try {
+      const response = await apiClient.request('/user/orders', {
+        method: 'GET',
+      });
+
+      return response.orders || [];
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch orders');
+    }
+  },
+
+  /**
+   * Update order payment status
+   */
+  async updateOrderPaymentStatus(orderId, status) {
+    try {
+      const response = await apiClient.request(`/user/orders/${orderId}/payment-status`, {
+        method: 'PUT',
+        body: JSON.stringify({ payment_status: status }),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update payment status');
     }
   },
 };
@@ -294,6 +342,372 @@ export const providerAPI = {
     } catch (error) {
       console.error('Error fetching provider:', error);
       return null;
+    }
+  },
+
+  /**
+   * Get provider image
+   */
+  async getProviderImage(providerId) {
+    try {
+      return `${API_BASE_URL}/providers/${providerId}/image`;
+    } catch (error) {
+      console.error('Error getting provider image URL:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Upload provider image (requires authentication)
+   */
+  async uploadImage(imageData) {
+    try {
+      const response = await apiClient.request('/image', {
+        method: 'POST',
+        body: JSON.stringify(imageData),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to upload image');
+    }
+  },
+
+  /**
+   * Get provider orders (for provider role)
+   */
+  async getOrders() {
+    try {
+      const response = await apiClient.request('/provider/orders', {
+        method: 'GET',
+      });
+
+      return response.orders || [];
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch provider orders');
+    }
+  },
+
+  /**
+   * Accept order (for provider role)
+   */
+  async acceptOrder(orderId) {
+    try {
+      const response = await apiClient.request(`/provider/orders/${orderId}/accept`, {
+        method: 'PUT',
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to accept order');
+    }
+  },
+
+  /**
+   * Reject order (for provider role)
+   */
+  async rejectOrder(orderId, reason) {
+    try {
+      const response = await apiClient.request(`/provider/orders/${orderId}/reject`, {
+        method: 'PUT',
+        body: JSON.stringify({ reason }),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to reject order');
+    }
+  },
+
+  /**
+   * Get single order details (for provider role)
+   */
+  async getOrderDetails(orderId) {
+    try {
+      const response = await apiClient.request(`/provider/orders/${orderId}`, {
+        method: 'GET',
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch order details');
+    }
+  },
+
+  /**
+   * Get provider inventory
+   */
+  async getInventory() {
+    try {
+      const response = await apiClient.request('/provider/inventory', {
+        method: 'GET',
+      });
+
+      return response.inventory || [];
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch inventory');
+    }
+  },
+
+  /**
+   * Add inventory item
+   */
+  async addInventoryItem(itemData) {
+    try {
+      const response = await apiClient.request('/provider/inventory', {
+        method: 'POST',
+        body: JSON.stringify(itemData),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to add inventory item');
+    }
+  },
+
+  /**
+   * Update inventory item
+   */
+  async updateInventoryItem(itemId, itemData) {
+    try {
+      const response = await apiClient.request(`/provider/inventory/${itemId}`, {
+        method: 'PUT',
+        body: JSON.stringify(itemData),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update inventory item');
+    }
+  },
+
+  /**
+   * Update inventory stock
+   */
+  async updateStock(itemId, quantity) {
+    try {
+      const response = await apiClient.request(`/provider/inventory/${itemId}/stock`, {
+        method: 'PUT',
+        body: JSON.stringify({ quantity }),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update stock');
+    }
+  },
+};
+
+/**
+ * Customer API endpoints
+ */
+export const customerAPI = {
+  /**
+   * Get best provider based on criteria
+   */
+  async getBestProvider(criteria) {
+    try {
+      const response = await apiClient.request('/customer/best', {
+        method: 'POST',
+        body: JSON.stringify(criteria),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to find best provider');
+    }
+  },
+};
+
+/**
+ * Courier API endpoints
+ */
+export const courierAPI = {
+  /**
+   * Get courier orders
+   */
+  async getOrders() {
+    try {
+      const response = await apiClient.request('/courier/orders', {
+        method: 'GET',
+      });
+
+      return response.orders || [];
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch courier orders');
+    }
+  },
+
+  /**
+   * Update order status
+   */
+  async updateOrderStatus(orderId, status) {
+    try {
+      const response = await apiClient.request(`/courier/orders/${orderId}/update-status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update order status');
+    }
+  },
+
+  /**
+   * Update courier location
+   */
+  async updateLocation(latitude, longitude) {
+    try {
+      const response = await apiClient.request('/courier/location', {
+        method: 'POST',
+        body: JSON.stringify({ latitude, longitude }),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update courier location');
+    }
+  },
+
+  /**
+   * Update order location
+   */
+  async updateOrderLocation(orderId, latitude, longitude) {
+    try {
+      const response = await apiClient.request(`/courier/orders/${orderId}/location`, {
+        method: 'PUT',
+        body: JSON.stringify({ latitude, longitude }),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update order location');
+    }
+  },
+
+  /**
+   * Get single order details
+   */
+  async getOrderDetails(orderId) {
+    try {
+      const response = await apiClient.request(`/courier/orders/${orderId}`, {
+        method: 'GET',
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch order details');
+    }
+  },
+
+  /**
+   * Get user details
+   */
+  async getUserDetails(userId) {
+    try {
+      const response = await apiClient.request(`/courier/users/${userId}`, {
+        method: 'GET',
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch user details');
+    }
+  },
+};
+
+/**
+ * Payment API endpoints
+ */
+export const paymentAPI = {
+  /**
+   * Initiate deposit
+   */
+  async initiateDeposit(amount, phoneNumber) {
+    try {
+      const response = await apiClient.request('/payments/deposit', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount,
+          phone_number: phoneNumber,
+        }),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to initiate deposit');
+    }
+  },
+
+  /**
+   * Check deposit status
+   */
+  async checkDepositStatus(depositId) {
+    try {
+      const response = await apiClient.request(`/payments/status/${depositId}`, {
+        method: 'GET',
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to check deposit status');
+    }
+  },
+};
+
+/**
+ * Order tracking API
+ */
+export const orderAPI = {
+  /**
+   * Track order by ID
+   */
+  async trackOrder(orderId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}/track`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to track order');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error tracking order:', error);
+      throw new Error(error.message || 'Failed to track order');
+    }
+  },
+};
+
+/**
+ * Pricing API
+ */
+export const pricingAPI = {
+  /**
+   * Get cylinder pricing for specific provider and cylinder type
+   */
+  async getCylinderPrice(providerId, cylinderType) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cylinder-pricing/${providerId}/${cylinderType}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch pricing');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching cylinder pricing:', error);
+      throw new Error(error.message || 'Failed to fetch pricing');
     }
   },
 };
@@ -380,6 +794,11 @@ export default {
   authAPI,
   userAPI,
   providerAPI,
+  customerAPI,
+  courierAPI,
+  paymentAPI,
+  orderAPI,
+  pricingAPI,
   calculateDistance,
   fetchNearbyStations,
 };
