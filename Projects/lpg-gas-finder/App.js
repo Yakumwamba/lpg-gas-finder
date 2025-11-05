@@ -44,11 +44,11 @@ function MapStackNavigator() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: '#FF6B6B',
+          backgroundColor: theme.colors.primary,
         },
-        headerTintColor: '#fff',
+        headerTintColor: theme.colors.white,
         headerTitleStyle: {
-          fontWeight: 'bold',
+          fontWeight: theme.typography.fontWeight.bold,
         },
       }}
     >
@@ -67,11 +67,11 @@ function SubscriptionStackNavigator() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: '#FF6B6B',
+          backgroundColor: theme.colors.primary,
         },
-        headerTintColor: '#fff',
+        headerTintColor: theme.colors.white,
         headerTitleStyle: {
-          fontWeight: 'bold',
+          fontWeight: theme.typography.fontWeight.bold,
         },
       }}
     >
@@ -90,11 +90,11 @@ function AccountStackNavigator() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: '#FF6B6B',
+          backgroundColor: theme.colors.primary,
         },
-        headerTintColor: '#fff',
+        headerTintColor: theme.colors.white,
         headerTitleStyle: {
-          fontWeight: 'bold',
+          fontWeight: theme.typography.fontWeight.bold,
         },
       }}
     >
@@ -133,20 +133,20 @@ function BottomTabNavigator() {
             return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
           }
         },
-        tabBarActiveTintColor: '#FF6B6B',
-        tabBarInactiveTintColor: '#999',
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.gray400,
         tabBarStyle: {
           borderTopWidth: 1,
-          borderTopColor: '#EEE',
+          borderTopColor: theme.colors.border,
           paddingBottom: 20,
           paddingTop: 8,
           height: 80,
-          backgroundColor: '#FFFFFF',
-          shadowColor: '#000',
+          backgroundColor: theme.colors.white,
+          shadowColor: theme.colors.shadowColor,
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 5,
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          elevation: 8,
         },
       })}
     >
