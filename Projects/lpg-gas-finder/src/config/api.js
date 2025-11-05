@@ -1,10 +1,249 @@
 /**
  * API Configuration
  * Backend API endpoints and helper functions
+ * Integrates with Go backend server for authentication, user management, and provider data
  */
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Backend API Base URL - Update this with your actual backend URL
 const API_BASE_URL = 'http://localhost:8080/api/v1';
+
+const TOKEN_KEY = '@lpg_gas_finder_token';
+
+/**
+ * API Client - Handles HTTP requests with authentication
+ */
+export const apiClient = {
+  token: null,
+
+  /**
+   * Initialize token from storage
+   */
+  async init() {
+    try {
+      const token = await AsyncStorage.getItem(TOKEN_KEY);
+      this.token = token;
+      return token;
+    } catch (error) {
+      console.error('Error loading token:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Set authentication token
+   */
+  async setToken(token) {
+    try {
+      this.token = token;
+      await AsyncStorage.setItem(TOKEN_KEY, token);
+    } catch (error) {
+      console.error('Error saving token:', error);
+    }
+  },
+
+  /**
+   * Clear authentication token
+   */
+  async clearToken() {
+    try {
+      this.token = null;
+      await AsyncStorage.removeItem(TOKEN_KEY);
+    } catch (error) {
+      console.error('Error clearing token:', error);
+    }
+  },
+
+  /**
+   * Make authenticated API request
+   */
+  async request(endpoint, options = {}) {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    // Add authorization header if token exists
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const config = {
+      ...options,
+      headers,
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Request failed');
+      }
+
+      return data;
+    } catch (error) {
+      console.error(`API request failed: ${endpoint}`, error);
+      throw error;
+    }
+  },
+};
+
+// Initialize token on module load
+apiClient.init();
+
+/**
+ * Authentication API endpoints
+ */
+export const authAPI = {
+  /**
+   * Sign up new user
+   */
+  async signup(email, password, name, userType = 'customer') {
+    try {
+      const response = await apiClient.request('/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          user_type: userType,
+        }),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Sign up failed');
+    }
+  },
+
+  /**
+   * Sign in existing user
+   */
+  async signin(email, password) {
+    try {
+      const response = await apiClient.request('/auth/signin', {
+        method: 'POST',
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Sign in failed');
+    }
+  },
+
+  /**
+   * Sign out current user
+   */
+  async signout() {
+    try {
+      await apiClient.request('/auth/signout', {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Don't throw error, as we'll clear token locally anyway
+    }
+  },
+
+  /**
+   * Send phone verification code
+   */
+  async sendPhoneCode(phoneNumber) {
+    try {
+      const response = await apiClient.request('/auth/phone/send', {
+        method: 'POST',
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+        }),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to send verification code');
+    }
+  },
+
+  /**
+   * Verify phone number with code
+   */
+  async verifyPhone(phoneNumber, code) {
+    try {
+      const response = await apiClient.request('/auth/phone/verify', {
+        method: 'POST',
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+          code,
+        }),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Phone verification failed');
+    }
+  },
+};
+
+/**
+ * User API endpoints
+ */
+export const userAPI = {
+  /**
+   * Get current user profile
+   */
+  async getProfile() {
+    try {
+      const response = await apiClient.request('/users/profile', {
+        method: 'GET',
+      });
+
+      return response.user || response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch profile');
+    }
+  },
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(profileData) {
+    try {
+      const response = await apiClient.request('/users/profile', {
+        method: 'PUT',
+        body: JSON.stringify(profileData),
+      });
+
+      return response.user || response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update profile');
+    }
+  },
+
+  /**
+   * Update user location
+   */
+  async updateLocation(latitude, longitude) {
+    try {
+      const response = await apiClient.request('/users/location', {
+        method: 'PUT',
+        body: JSON.stringify({
+          latitude,
+          longitude,
+        }),
+      });
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update location');
+    }
+  },
+};
 
 /**
  * Provider API endpoints
@@ -93,7 +332,7 @@ function toRad(degrees) {
 }
 
 /**
- * Fetch nearby stations (mock implementation for fallback)
+ * Fetch nearby stations (helper function)
  * This can be replaced with actual backend call if needed
  */
 export async function fetchNearbyStations(latitude, longitude, maxDistance) {
@@ -137,6 +376,9 @@ export async function fetchNearbyStations(latitude, longitude, maxDistance) {
 
 export default {
   API_BASE_URL,
+  apiClient,
+  authAPI,
+  userAPI,
   providerAPI,
   calculateDistance,
   fetchNearbyStations,
